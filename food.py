@@ -42,4 +42,4 @@ class Food(object):
 # Tests:
 egg = Food(FOOD_IDS["Boiled Egg"])
 print(egg.macros.__dict__)
-print(egg.macros._get_total_calories()) # TODO: this is all based on 100 grams!! ahh!!
+print(egg.macros._get_total_calories())

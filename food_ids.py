@@ -195,7 +195,6 @@ sample response:
 
 """
 
-# TODO: this needs serving sizes in grams since the results come back for 100g amounts
 FOOD_IDS = {
     "Boiled Egg": "45028794",
     "Bacon": "45172471",
