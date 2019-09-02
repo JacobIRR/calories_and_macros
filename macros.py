@@ -5,6 +5,7 @@ class Macros:
         self.protein_grams = protein_grams
         self.fat_grams = fat_grams
         self.carb_grams = carb_grams
+        self.calories = self._get_total_calories()
 
     def _get_total_calories(self):
         return sum([

@@ -203,12 +203,12 @@ FOOD_IDS = {
     "Avocado": "09038",
     "Chicken Breast": "45257607",
     "Spinach": "45279549",
-    "Mixed nuts": "45274471",
-    "Sweet potato": "45215980",
+    "Mixed Nuts": "45274471",
+    "Sweet Potato": "45215980",
     "Salmon": "45202301",
-    "Brown rice": "45009665",
-    "Green peas": "45209733",
-    "Whole milk": "45192730",
+    "Brown Rice": "45009665",
+    "Green Peas": "45209733",
+    "Whole Milk": "45192730",
     # "Mass Gainer powder": "",  -  needs its own obj....
 }
 

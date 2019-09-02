@@ -1,19 +1,19 @@
 from macros import Macros
 
 class GainOrMaintainConfig:
-    """ for gaining weight """
-    def __init__(self, gain=True):
+    """ for gaining or maintaining target_weight """
+    def __init__(self, target_weight, gain=True):
         self.epsilon = 5  # fudge factor for calculations
-        self.weight = weight
+        self.target_weight = target_weight
         self.gain = gain
-        self.fetch_config(weight)
+        self.fetch_config(target_weight)
 
-    def fetch_config(self, weight):
+    def fetch_config(self, target_weight):
         '''
         Calories per day to gain 3389
         Calories per day to maintain 2965
         '''
-        # TODO: use weight arg to get these values from an API
+        # TODO: use target_weight arg to get these values from an API
         self.daily_calories_needed = 3389 if self.gain else 2965
         self.macros = self.get_plan_macros()
 
@@ -52,5 +52,5 @@ Grams of Fat: {}""".format(self.daily_calories_needed,
 
 
 # test:
-gain_config = GainOrMaintainConfig(150)
+gain_config = GainOrMaintainConfig(200)
 print(gain_config)
