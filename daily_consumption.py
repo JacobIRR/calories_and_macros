@@ -1,3 +1,4 @@
+from collections import defaultdict
 from configs import GainOrMaintainConfig
 from food_ids import FOOD_IDS
 from food import Food
@@ -53,29 +54,38 @@ class DailyConsumption:
     def get_daily_food_options(self):
         target = self.config.daily_calories_needed
         food_combinations = []
-        groceries = []
-        groceries.append(Food(FOOD_IDS["Boiled Egg"]))
-        groceries.append(Food(FOOD_IDS["Brown Rice"]))
-        groceries.append(Food(FOOD_IDS["Chicken Breast"]))
+        groceries = self.get_foods_from_id_bank()
         num_iterations = 100 # I have to manually change this to get more/less results
         for i in range(num_iterations):
-            temp_combination = []
+            temp_combination = defaultdict(int)
             current_calories = 0
             while current_calories < target:
                 food = choice(groceries) # random (not smart)
-                temp_combination.append(food)
-                current_calories += sum([f.macros.calories for f in temp_combination])
+                key = "{} ({}g per serving)".format(food.name, food.macros.serving_size)
+                temp_combination[key] += 1
+                current_calories += food.macros.calories
             food_combinations.append(temp_combination)
         return food_combinations
 
+    def get_foods_from_id_bank(self):
+        out = []
+        for k in FOOD_IDS:
+            try:
+                out.append(Food(k))
+            except:
+                print("cannot make this food: ", k)
+        return out
+        # return [Food(k) for k in FOOD_IDS] - this blows up sometimes
+
 
 # Test:
-goal_pounds = 200
-day = DailyConsumption(GainOrMaintainConfig(200))
-food_options = day.get_daily_food_options()
-for ix, opt in enumerate(food_options):
-    print("=================================")
-    print(" COMBINATION NUMBER {}".format(ix))
-    print("=================================")
-    for f in opt:
-        print(f)
+if __name__ == '__main__':
+    goal_pounds = 200
+    day = DailyConsumption(GainOrMaintainConfig(200))
+    food_options = day.get_daily_food_options()
+    for ix, opt in enumerate(food_options):
+        print("=================================")
+        print(" COMBINATION NUMBER {}".format(ix))
+        print("=================================")
+        for k, v in opt.items():
+            print("{} : {} servings".format(k, v))

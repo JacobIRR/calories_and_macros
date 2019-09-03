@@ -52,5 +52,6 @@ Grams of Fat: {}""".format(self.daily_calories_needed,
 
 
 # test:
-gain_config = GainOrMaintainConfig(200)
-print(gain_config)
+if __name__ == '__main__':
+    gain_config = GainOrMaintainConfig(200)
+    print(gain_config)

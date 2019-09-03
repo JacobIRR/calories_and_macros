@@ -1,7 +1,8 @@
 class Macros:
     PROTEIN_CALORIES_PER_GRAM = CARB_CALORIES_PER_GRAM = 4
     FAT_CALORIES_PER_GRAM = 9
-    def __init__(self, protein_grams=0, fat_grams=0, carb_grams=0):
+    def __init__(self, serving_size=0, protein_grams=0, fat_grams=0, carb_grams=0):
+        self.serving_size = serving_size
         self.protein_grams = protein_grams
         self.fat_grams = fat_grams
         self.carb_grams = carb_grams
