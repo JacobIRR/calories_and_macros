@@ -67,6 +67,52 @@ class DailyConsumption:
             food_combinations.append(temp_combination)
         return food_combinations
 
+
+    def get_combinations(self):
+        """
+        This method is from https://stackoverflow.com/a/57764143/4225229
+        This needs to unpack the calories dynamically to build calorie_counts
+        We have the total_calories as self.config.daily_calories_needed.
+        """
+        from itertools import product
+        total_calories = self.config.daily_calories_needed
+        groceries = self.get_foods_from_id_bank()  # list of Food objects
+        output = set()
+        calorie_counts = []
+        safe_level = 6 # out of 11 or 13
+        for i in range(safe_level):
+            groceries.pop() # take off some groceries to help it finish
+
+        n = len(groceries)
+        for g in groceries:
+            # we are just adding total calories per food here.
+            # We could add a richer object here to unpack into a dict later
+            print("calorie_count addition:", g.macros.calories)
+            calorie_counts.append(g.macros.calories)
+
+
+        # calorie_counts = [300, 150, 200] # OVERRIDE for small tests
+        # n = len(calorie_counts)
+
+        max_factors = [total_calories // int(calorie_counts[i]) for i in range(n)]
+        print("max_factors is : ", max_factors) # why do I need this?
+
+        print("about to loop over product...")
+        epsilon = 100
+        product_list = product(*(range(factors + 1) for factors in max_factors))
+        # product_list_list = list(product_list)
+        # print("Length: product(*(range(factors + 1) for factors in max_factors)) is : ", len(product_list_list))
+
+        for t in product_list:
+            calorie_count = sum([t[i] * calorie_counts[i] for i in range(n)])
+            # print("calorie_count calculated as : ", calorie_count)
+            if calorie_count >= total_calories and calorie_count < total_calories + epsilon:
+                # print("found a match!")
+                output.add(t)
+        print("about to return output...")
+        return output
+
+
     def get_foods_from_id_bank(self):
         out = []
         for k in FOOD_IDS:
@@ -82,10 +128,12 @@ class DailyConsumption:
 if __name__ == '__main__':
     goal_pounds = 200
     day = DailyConsumption(GainOrMaintainConfig(200))
-    food_options = day.get_daily_food_options()
-    for ix, opt in enumerate(food_options):
-        print("=================================")
-        print(" COMBINATION NUMBER {}".format(ix))
-        print("=================================")
-        for k, v in opt.items():
-            print("{} : {} servings".format(k, v))
+    combinations = day.get_combinations()
+    print(combinations)
+    # food_options = day.get_daily_food_options()
+    # for ix, opt in enumerate(food_options):
+    #     print("=================================")
+    #     print(" COMBINATION NUMBER {}".format(ix))
+    #     print("=================================")
+    #     for k, v in opt.items():
+    #         print("{} : {} servings".format(k, v))
