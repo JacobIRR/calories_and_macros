@@ -1,0 +1,15 @@
+TODO:
+
+As of 9/3 this works sort of, but is super slow with 13 foods.
+
+1. Try multiprocessing it:
+https://stackoverflow.com/questions/9786102/how-do-i-parallelize-a-simple-python-loop
+
+2. Use a yielding recursion strategy instead:
+https://stackoverflow.com/a/57765514/4225229
+
+3. Try separating breakfast meals from other meals
+
+4. Make the resulting sets of foods be sorted by their calorie ratios
+
+5. Develop the loops to make a nice friendly output and save it as JSON
