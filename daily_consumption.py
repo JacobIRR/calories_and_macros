@@ -1,3 +1,5 @@
+from datetime import datetime
+from functools import lru_cache
 from pprint import pprint
 from collections import defaultdict
 from configs import GainOrMaintainConfig
@@ -6,6 +8,8 @@ from food import Food
 from random import choice
 
 DUMP_PATH = './dump.json'
+SKIP_LOG = './skip_log.txt'
+RESULT_LOG = './result_log.txt'
 
 FOOD_NAMES_ORDERED_BY_CALORIE = [
     'Avocado',
@@ -70,98 +74,83 @@ class DailyConsumption:
     def __init__(self, config):
         self.config = config
 
-    def get_daily_food_options(self):
-        target = self.config.daily_calories_needed
-        food_combinations = []
-        groceries = self.get_foods_from_id_bank()
-        num_iterations = 100 # I have to manually change this to get more/less results
-        for i in range(num_iterations):
-            temp_combination = defaultdict(int)
-            current_calories = 0
-            while current_calories < target:
-                food = choice(groceries) # random (not smart)
-                key = "{} ({}g per serving)".format(food.name, food.macros.serving_size)
-                temp_combination[key] += 1
-                current_calories += food.macros.calories
-            food_combinations.append(temp_combination)
-        return food_combinations
-
-
-    def get_combinations(self):
-        """
-        This method is from https://stackoverflow.com/a/57764143/4225229
-        This needs to unpack the calories dynamically to build calorie_counts
-        We have the total_calories as self.config.daily_calories_needed.
-        """
-        from itertools import product
-        total_calories = self.config.daily_calories_needed
-        groceries = self.get_foods_from_id_bank()  # list of Food objects
-        output = set()
-        calorie_counts = []
-        safe_level = 6 # out of 11 or 13
-        for i in range(safe_level):
-            groceries.pop() # take off some groceries to help it finish
-
-        n = len(groceries)
-        for g in groceries:
-            # we are just adding total calories per food here.
-            # We could add a richer object here to unpack into a dict later
-            print("calorie_count addition:", g.macros.calories)
-            calorie_counts.append(g.macros.calories)
-
-
-        # calorie_counts = [300, 150, 200] # OVERRIDE for small tests
-        # n = len(calorie_counts)
-
-        max_factors = [total_calories // int(calorie_counts[i]) for i in range(n)]
-        print("max_factors is : ", max_factors) # why do I need this?
-
-        print("about to loop over product...")
-        product_list = product(*(range(factors + 1) for factors in max_factors))
-        # product_list_list = list(product_list)
-        # print("Length: product(*(range(factors + 1) for factors in max_factors)) is : ", len(product_list_list))
-
-        for t in product_list:
-            calorie_count = sum([t[i] * calorie_counts[i] for i in range(n)])
-            # print("calorie_count calculated as : ", calorie_count)
-            if calorie_count >= total_calories and \
-               calorie_count < total_calories + self.config.epsilon:
-                # print("found a match!")
-                output.add(t)
-        print("about to return output...")
-        return output
-
-
     def combos(self):  # menu: list of values
-        # TODO: this sometimes outputs negative numbers!:
+        # TODO / BUG : this sometimes outputs negative numbers!:
         # e.g. [9, 9, 9, 7, 0, 0, -1, 0, 0, 4, 0, 8, 0]
-        target = self.config.daily_calories_needed
+
+        # make a menu dict to show which foods have which calories
         menu = {}
         for food in self.get_foods_from_id_bank():
             menu[food.name] = int(food.macros.calories)
         print("menu is : ")
         pprint(menu)
-        # Put the biggest first for efficiency
-        # and to avoid large shortfalls:
-        ordered = sorted(enumerate(menu.values()),key=lambda e: -e[1])
-        print("ordered: ", ordered)
-        # Construct inverse permutation:
-        inv=[None]*len(menu)
-        for i,(j,_) in enumerate(ordered): inv[j]=i
-        for c in self.combos_helper([v for _,v in ordered], target, []):
-            yield [c[i] for i in inv]
 
-    def combos_helper(self, menu, target, pfx):
-        v = menu[len(pfx)]
-        # Leave no budget unspent:
-        if len(pfx) == len(menu) - 1:
-            n =-(-target // v)  # ceiling division
-            if target + self.config.epsilon >= n * v:
-                yield pfx + [n]
+        # Put the biggest first for efficiency and to avoid large shortfalls
+        # We enumerate these with indexes and use the second value for sorting
+        sort_desc_tuple_func = lambda e: -e[1]
+        ordered = sorted(enumerate(menu.values()), key=sort_desc_tuple_func)
+
+        # We need to construct an inverse permutation
+        # Make a list full of None entries...
+        inverse = [None] * len(menu)
+        # loop over the ordered list of tuples and put the index of each
+        #  as the value in the list at the index of the value
+        for i, (j, _) in enumerate(ordered):
+            inverse[j] = i
+        # result is something like:
+        # [9, 7, 8, 11, 0, 5, 12, 2, 1, 6, 3, 10, 4]
+
+        # Now we call our helper method
+        sorted_calories = [v for _,v in ordered]
+        # ^ [247, 204, 184, 169, 157, 114, 105, 91, 82, 68, 68, 40, 20] ^
+
+        for c in self.combos_helper(tuple(sorted_calories),
+                                    self.config.daily_calories_needed,
+                                    ()):
+            # c comes back out of order, so this next line let's us
+            # yield the servings back in the original order:
+            yield [c[i] for i in inverse]
+
+    @lru_cache(maxsize=1024)
+    def combos_helper(self, sorted_calories, target, prefix):
+        """
+        In order to use this method with the lru_cache,
+        all args must be immutable, meaning lists must be tuples
+        """
+        target_with_epsilon = target + self.config.epsilon
+        # get a single value from the sorted_calories based on
+        # the length of the prefix list
+        # note that the length of prefix is never as long as sorted_calories
+        calories_per_food = sorted_calories[len(prefix)]
+        # "Leave no budget unspent":
+        # Here we have two cases:
+        # 1) BASE CASE: The prefix has reached its max length:
+        if len(prefix) == len(sorted_calories) - 1:
+            num_servings = -(-target // calories_per_food) # TODO: why?
+            try:
+                assert num_servings >= 0
+            except AssertionError:
+                 # no negative numbers allowed! bail out
+                 return
+            # Here we check that our servings equal the calories we want
+            # TODO: add another macro check here
+            calories_per_n_servings = num_servings * calories_per_food
+            if target_with_epsilon >= calories_per_n_servings:
+                yield list(prefix) + [num_servings]
+        # 2) RECURSIVE CASE: The prefix is smaller than its max length
         else:
-            for i in range((target + self.config.epsilon) // v + 1):
-                for c in self.combos_helper(menu, target - i * v, pfx + [i]):
-                    yield c
+            # find out how many servings we need by dividing target by calories
+            servings_needed = target_with_epsilon // calories_per_food + 1
+            # Loop over this range of servings
+            for serving in range(servings_needed):
+                # Calculate a new target for the remainder of calories needed
+                new_target = target - (serving * calories_per_food)
+                # Rescurse using the current prefix plus this serving
+                recursive_combos = self.combos_helper(sorted_calories,
+                                                      new_target,
+                                                      tuple(list(prefix) + [serving]))
+                for combo in recursive_combos:
+                    yield combo
 
     def get_foods_from_id_bank(self, use_json=True, store=0):
         out = []
@@ -191,35 +180,30 @@ class DailyConsumption:
 # Test:
 if __name__ == '__main__':
     goal_pounds = 200
-    day = DailyConsumption(GainOrMaintainConfig(200))
-
+    day = DailyConsumption(GainOrMaintainConfig(goal_pounds))
+    counter = 0
+    start_time = datetime.now()
     # option 3
     combos = day.combos()
     for combo in combos:
-        # we can make sure that we don't have too many servings of a single food:
+        # we can make sure that we don't have too many servings of a single food
+        # (no more than 5 servings) and we don't want to exclude more than 5 foods
         if max(combo) < 5 and combo.count(0) < 5:
             # Here we have lists of serving counts like this:
             # [0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0]
             # We need to reverse map the position of the serving
             # to know which food the count is referencing
-            d = {}
-            for k, v in zip(FOOD_NAMES_ORDERED_BY_CALORIE, combo):
-                d[k] = str(v) + " servings"
-            pprint(d)
-            print("==================================================")
+            with open(RESULT_LOG, 'a') as f:
+                for food_name, servings in zip(FOOD_NAMES_ORDERED_BY_CALORIE, combo):
+                    f.write("{} servings of {}".format(str(servings), food_name))
+                    f.write("==================================================")
         else:
-
-
-
-    # option 2
-    # combinations = day.get_combinations()
-    # print(combinations)
-
-    # option 1
-    # food_options = day.get_daily_food_options()
-    # for ix, opt in enumerate(food_options):
-    #     print("=================================")
-    #     print(" COMBINATION NUMBER {}".format(ix))
-    #     print("=================================")
-    #     for k, v in opt.items():
-    #         print("{} : {} servings".format(k, v))
+            # Only log millions of rows. Otherwise the file blows up the disk space
+            counter += 1
+            if counter % 1000000 == 0:
+                millions_rows = counter // 1000000 # TODO: format with commas
+                delta = datetime.now() - start_time
+                minutes = delta.seconds // 60  # TODO: format with commas or hours, etc.
+                log_str = "Skipped {} million rows after {} minutes \n"
+                with open(SKIP_LOG, 'w') as fp:
+                    fp.write(log_str.format(millions_rows, minutes))

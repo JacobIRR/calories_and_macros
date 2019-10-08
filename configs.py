@@ -3,7 +3,7 @@ from macros import Macros
 class GainOrMaintainConfig:
     """ for gaining or maintaining target_weight """
     def __init__(self, target_weight, gain=True):
-        self.epsilon = 25  # fudge factor for calculations
+        self.epsilon = 100  # fudge factor for calculations
         self.target_weight = target_weight
         self.gain = gain
         self.fetch_config(target_weight)
