@@ -10,11 +10,19 @@ DEFAULT_SERVING = 100  # grams
 
 class Food(object):
     """a food object from an ndbno ID """
-    def __init__(self, name, debug=False):
-        self.name = name
-        self.id = FOOD_IDS[name]  # ndbno
-        self.debug = debug
-        self.macros = self._fetch_food_info()
+    def __init__(self, name="", update_dict=None, debug=False):
+        if update_dict:
+            self.__dict__.update(update_dict)
+            m = update_dict['macros']
+            self.macros = Macros(m['serving_size'],
+                                 m['protein_grams'],
+                                 m['fat_grams'],
+                                 m['carb_grams'])
+        else:
+            self.name = name
+            self.id = FOOD_IDS[name]  # ndbno
+            self.debug = debug
+            self.macros = self._fetch_food_info()
 
     def __str__(self):
         return self.name

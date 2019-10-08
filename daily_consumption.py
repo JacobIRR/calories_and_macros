@@ -1,8 +1,11 @@
+from pprint import pprint
 from collections import defaultdict
 from configs import GainOrMaintainConfig
 from food_ids import FOOD_IDS
 from food import Food
 from random import choice
+
+DUMP_PATH = './dump.json'
 
 class ConsumableFood:
     def __init__(self, name, num_servings):
@@ -98,7 +101,6 @@ class DailyConsumption:
         print("max_factors is : ", max_factors) # why do I need this?
 
         print("about to loop over product...")
-        epsilon = 100
         product_list = product(*(range(factors + 1) for factors in max_factors))
         # product_list_list = list(product_list)
         # print("Length: product(*(range(factors + 1) for factors in max_factors)) is : ", len(product_list_list))
@@ -106,7 +108,8 @@ class DailyConsumption:
         for t in product_list:
             calorie_count = sum([t[i] * calorie_counts[i] for i in range(n)])
             # print("calorie_count calculated as : ", calorie_count)
-            if calorie_count >= total_calories and calorie_count < total_calories + epsilon:
+            if calorie_count >= total_calories and \
+               calorie_count < total_calories + self.config.epsilon:
                 # print("found a match!")
                 output.add(t)
         print("about to return output...")
@@ -115,39 +118,54 @@ class DailyConsumption:
 
     def combos(self):  # menu: list of values
         target = self.config.daily_calories_needed
-        extra = 100  # epsilon / fudge factor
-        menu = [int(f.macros.calories) for f in self.get_foods_from_id_bank()]
+        menu = {}
+        for food in self.get_foods_from_id_bank():
+            menu[food.name] = int(food.macros.calories)
+        print("menu is : ")
+        pprint(menu)
         # Put the biggest first for efficiency
         # and to avoid large shortfalls:
-        order=sorted(enumerate(menu),key=lambda e: -e[1])
+        ordered = sorted(enumerate(menu.values()),key=lambda e: -e[1])
+        print("ordered: ", ordered)
         # Construct inverse permutation:
         inv=[None]*len(menu)
-        for i,(j,_) in enumerate(order): inv[j]=i
-        for c in self.combos0([v for _,v in order],target,extra,[]):
+        for i,(j,_) in enumerate(ordered): inv[j]=i
+        for c in self.combos_helper([v for _,v in ordered], target, []):
             yield [c[i] for i in inv]
 
-    def combos0(self, menu, target, extra, pfx):
-        v=menu[len(pfx)]
+    def combos_helper(self, menu, target, pfx):
+        v = menu[len(pfx)]
         # Leave no budget unspent:
-        if len(pfx)==len(menu)-1:
-            n=-(-target//v)  # ceiling division
-            if target+extra>=n*v: yield pfx+[n]
+        if len(pfx) == len(menu)-1:
+            n =-(-target // v)  # ceiling division
+            if target + self.config.epsilon >= n * v:
+                yield pfx + [n]
         else:
-            for i in range((target+extra)//v+1):
-                for c in self.combos0(menu,target-i*v,extra,pfx+[i]): yield c
+            for i in range((target + self.config.epsilon) // v + 1):
+                for c in self.combos_helper(menu, target - i * v, pfx + [i]):
+                    yield c
 
-    def get_foods_from_id_bank(self, store=0):
+    def get_foods_from_id_bank(self, use_json=True, store=0):
         out = []
-        for k in FOOD_IDS:
-            try:
-                out.append(Food(k))
-            except:
-                print("cannot make this food: ", k)
-        if store:
-            print("saving to file....")
-            res = json.dumps(out)
-            print("res:")
-            print(res)
+        if use_json:
+            import json
+
+            with open(DUMP_PATH) as fp:
+                json_content = json.load(fp)
+                # Create objects from dict
+                for d in json_content:
+                    out.append(Food(update_dict=d))
+        else:
+            for k in FOOD_IDS:
+                try:
+                    out.append(Food(k))
+                except:
+                    print("cannot make this food: ", k)
+            if store:
+                print("saving to file....")
+                res = json.dumps(out)
+                print("res:")
+                print(res)
         return out
         # return [Food(k) for k in FOOD_IDS] - this blows up sometimes
 
@@ -160,7 +178,8 @@ if __name__ == '__main__':
     # option 3
     combs = day.combos()
     for c in combs:
-        print(c)
+        if len(c) - c.count(0) == 1:
+            print(c)
 
     # option 2
     # combinations = day.get_combinations()
