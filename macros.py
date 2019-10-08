@@ -14,3 +14,9 @@ class Macros:
                 self.fat_grams * self.FAT_CALORIES_PER_GRAM,
                 self.carb_grams * self.CARB_CALORIES_PER_GRAM
             ])
+
+    def __str__(self):
+        return str(self.__dict__)
+
+    def __repr__(self):
+        return self.__str__()

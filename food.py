@@ -10,10 +10,10 @@ DEFAULT_SERVING = 100  # grams
 
 class Food(object):
     """a food object from an ndbno ID """
-    def __init__(self, name):
+    def __init__(self, name, debug=False):
         self.name = name
         self.id = FOOD_IDS[name]  # ndbno
-        self.debug = False
+        self.debug = debug
         self.macros = self._fetch_food_info()
 
     def __str__(self):
@@ -28,8 +28,20 @@ class Food(object):
             print("============END RESPONSE:===============")
         food_obj = json_dict['foods'][0]['food']
         nutrients = food_obj['nutrients']
-        serving_grams = nutrients[0]['measures'][0]['eqv']
-        assert nutrients[0]['measures'][0]['eunit'] == 'g'
+        try:
+            serving_grams = nutrients[0]['measures'][0]['eqv']
+            assert nutrients[0]['measures'][0]['eunit'] == 'g'
+        except (KeyError, AssertionError):
+            # Not all foods have a "measures" key
+            if self.debug:
+                print("We cannot find the `measures` key, continuing...")
+            if self.name == "Avocado":
+                serving_grams = 136
+            elif self.name == "Whole Milk":
+                serving_grams = 240  # mililiters not grams
+            else:
+                raise
+
         # now build the macros
         protein = fat = carbs = 0
         for d in nutrients:
@@ -48,9 +60,13 @@ class Food(object):
 
 # Tests:
 if __name__ == '__main__':
-    foods = []
-    foods.append(Food("Boiled Egg"))
-    foods.append(Food("Brown Rice"))
-    foods.append(Food("Chicken Breast"))
-
-    print([f.macros.__dict__ for f in foods])
+    out = []
+    for k in FOOD_IDS:
+        try:
+            print("k is : ", k)
+            out.append(Food(k))
+        except Exception as e:
+            print("cannot make this food: ", k)
+            print("... because: ", e)
+            raise
+    print([f.__dict__ for f in out])

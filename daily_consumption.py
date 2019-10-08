@@ -113,13 +113,41 @@ class DailyConsumption:
         return output
 
 
-    def get_foods_from_id_bank(self):
+    def combos(self):  # menu: list of values
+        target = self.config.daily_calories_needed
+        extra = 100  # epsilon / fudge factor
+        menu = [int(f.macros.calories) for f in self.get_foods_from_id_bank()]
+        # Put the biggest first for efficiency
+        # and to avoid large shortfalls:
+        order=sorted(enumerate(menu),key=lambda e: -e[1])
+        # Construct inverse permutation:
+        inv=[None]*len(menu)
+        for i,(j,_) in enumerate(order): inv[j]=i
+        for c in self.combos0([v for _,v in order],target,extra,[]):
+            yield [c[i] for i in inv]
+
+    def combos0(self, menu, target, extra, pfx):
+        v=menu[len(pfx)]
+        # Leave no budget unspent:
+        if len(pfx)==len(menu)-1:
+            n=-(-target//v)  # ceiling division
+            if target+extra>=n*v: yield pfx+[n]
+        else:
+            for i in range((target+extra)//v+1):
+                for c in self.combos0(menu,target-i*v,extra,pfx+[i]): yield c
+
+    def get_foods_from_id_bank(self, store=0):
         out = []
         for k in FOOD_IDS:
             try:
                 out.append(Food(k))
             except:
                 print("cannot make this food: ", k)
+        if store:
+            print("saving to file....")
+            res = json.dumps(out)
+            print("res:")
+            print(res)
         return out
         # return [Food(k) for k in FOOD_IDS] - this blows up sometimes
 
@@ -128,8 +156,17 @@ class DailyConsumption:
 if __name__ == '__main__':
     goal_pounds = 200
     day = DailyConsumption(GainOrMaintainConfig(200))
-    combinations = day.get_combinations()
-    print(combinations)
+
+    # option 3
+    combs = day.combos()
+    for c in combs:
+        print(c)
+
+    # option 2
+    # combinations = day.get_combinations()
+    # print(combinations)
+
+    # option 1
     # food_options = day.get_daily_food_options()
     # for ix, opt in enumerate(food_options):
     #     print("=================================")

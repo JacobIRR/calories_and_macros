@@ -13,3 +13,7 @@ https://stackoverflow.com/a/57765514/4225229
 4. Make the resulting sets of foods be sorted by their calorie ratios
 
 5. Develop the loops to make a nice friendly output and save it as JSON
+
+6. Once we get back the quantities of servings needed to equal a caloric amount,
+    we need to also make meals from the result sets which have a number of servings
+    matching nicely with store serving sizes (chicken breast, etc.)
