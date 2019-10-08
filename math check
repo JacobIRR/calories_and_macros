@@ -1,0 +1,60 @@
+math check:
+This explains how to read the integer output
+
+{'Avocado': 247,
+ 'Bacon': 91,
+ 'Boiled Egg': 68,
+ 'Brown Rice': 169,
+ 'Chicken Breast': 114,
+ 'Good Seed bread': 82,
+ 'Green Peas': 68,
+ 'Mixed Nuts': 184,
+ 'Pineapple': 40,
+ 'Salmon': 105,
+ 'Spinach': 20,
+ 'Sweet Potato': 204,
+ 'Whole Milk': 157}
+ordered:  [(4, 247), (8, 204), (7, 184), (10, 169), (12, 157), (5, 114), (9, 105),
+           (1, 91), (2, 82), (0, 68), (11, 68), (3, 40), (6, 20)]
+
+order map:
+[4, 8, 7, 10, 12, 5, 9,   1, 2, 0, 11, 3, 6] - ~~~ !!! this is irrelevant!
+
+first result:
+[0, 0, 0, 0,  0,  0, 156, 0, 0, 0, 0,  4, 0]
+
+implied:
+156 instances of the 9th item (Salmon)
+4 instances of the 3rd item (Pineapple)
+
+math worked out:
+(156 * 105) + (4 * 40) ! wrong !
+---------------------------------
+
+Here's why the above is wrong: 1-indexing. Trying again with zero indexing:
+first result:
+[0, 0, 0, 0,  0,  0, 156, 0, 0, 0, 0,  4, 0]
+
+implied:
+156 instances of the 6th item (Spinach) when using 0 index
+4 instances of the 11th item (Green Peas)
+
+math worked out:
+(156 * 20) + (4 * 68) = 3392 - ! correct !
+
+==============================================================
+re attempt:
+==============================================================
+
+target:
+3389
+
+With an epsilon of 100, these entires have a single food repeated only:
+[0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0]
+
+3289 / 170 = 19.3
+3389 / 170 = 19.9
+3489 / 170 = 20.5
+... so this food that needs 170 servings is probably Spinach: 20 calories.
+The number is in position 6 (zero indexed)
+

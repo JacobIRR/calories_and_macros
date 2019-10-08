@@ -7,6 +7,22 @@ from random import choice
 
 DUMP_PATH = './dump.json'
 
+FOOD_NAMES_ORDERED_BY_CALORIE = [
+    'Avocado',
+    'Sweet Potato',
+    'Mixed Nuts',
+    'Brown Rice',
+    'Chicken Breast',
+    'Salmon',
+    'Bacon',
+    'Boiled Egg',
+    'Good Seed bread',
+    'Green Peas',
+    'Pineapple',
+    'Spinach',
+    'Whole Milk',
+     ]
+
 class ConsumableFood:
     def __init__(self, name, num_servings):
         self.name = name
@@ -117,6 +133,8 @@ class DailyConsumption:
 
 
     def combos(self):  # menu: list of values
+        # TODO: this sometimes outputs negative numbers!:
+        # e.g. [9, 9, 9, 7, 0, 0, -1, 0, 0, 4, 0, 8, 0]
         target = self.config.daily_calories_needed
         menu = {}
         for food in self.get_foods_from_id_bank():
@@ -136,7 +154,7 @@ class DailyConsumption:
     def combos_helper(self, menu, target, pfx):
         v = menu[len(pfx)]
         # Leave no budget unspent:
-        if len(pfx) == len(menu)-1:
+        if len(pfx) == len(menu) - 1:
             n =-(-target // v)  # ceiling division
             if target + self.config.epsilon >= n * v:
                 yield pfx + [n]
@@ -176,10 +194,22 @@ if __name__ == '__main__':
     day = DailyConsumption(GainOrMaintainConfig(200))
 
     # option 3
-    combs = day.combos()
-    for c in combs:
-        if len(c) - c.count(0) == 1:
-            print(c)
+    combos = day.combos()
+    for combo in combos:
+        # we can make sure that we don't have too many servings of a single food:
+        if max(combo) < 5 and combo.count(0) < 5:
+            # Here we have lists of serving counts like this:
+            # [0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0]
+            # We need to reverse map the position of the serving
+            # to know which food the count is referencing
+            d = {}
+            for k, v in zip(FOOD_NAMES_ORDERED_BY_CALORIE, combo):
+                d[k] = str(v) + " servings"
+            pprint(d)
+            print("==================================================")
+        else:
+
+
 
     # option 2
     # combinations = day.get_combinations()
