@@ -195,8 +195,8 @@ if __name__ == '__main__':
             # to know which food the count is referencing
             with open(RESULT_LOG, 'a') as f:
                 for food_name, servings in zip(FOOD_NAMES_ORDERED_BY_CALORIE, combo):
-                    f.write("{} servings of {}".format(str(servings), food_name))
-                    f.write("==================================================")
+                    f.write("{} servings of {} \n".format(str(servings), food_name))
+                f.write("==================================================\n\n")
         else:
             # Only log millions of rows. Otherwise the file blows up the disk space
             counter += 1

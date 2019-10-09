@@ -1,1 +1,1 @@
-Skipped 18 million rows after 1 minutes 
+Skipped 355 million rows after 41 minutes 
