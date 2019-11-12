@@ -7,7 +7,7 @@ from food_ids import FOOD_IDS
 from food import Food
 from random import choice
 
-DUMP_PATH = './dump.json'
+DUMP_PATH = './dump2.json'
 SKIP_LOG = './skip_log.txt'
 RESULT_LOG = './result_log.txt'
 
@@ -25,6 +25,14 @@ FOOD_NAMES_ORDERED_BY_CALORIE = [
     'Pineapple',
     'Spinach',
     'Whole Milk',
+     ]
+
+# for dump2.json
+FOOD_NAMES_ORDERED_BY_CALORIE = [
+    'Boiled Egg',
+    'Chicken Breast',
+    'Spinach',
+    'Brown Rice',
      ]
 
 class ConsumableFood:
@@ -161,10 +169,12 @@ class DailyConsumption:
                 json_content = json.load(fp)
                 # Create objects from dict
                 for d in json_content:
+                    # print ("d from this file is : ", d)
                     out.append(Food(update_dict=d))
         else:
             for k in FOOD_IDS:
                 try:
+                    print("appending new food: ", k)
                     out.append(Food(k))
                 except:
                     print("cannot make this food: ", k)
@@ -188,14 +198,16 @@ if __name__ == '__main__':
     for combo in combos:
         # we can make sure that we don't have too many servings of a single food
         # (no more than 5 servings) and we don't want to exclude more than 5 foods
-        if max(combo) < 5 and combo.count(0) < 5:
+        # if (max(combo) < 5 and combo.count(0) < 5):
+        # print("combo: ", combo)
+        if (max(combo) < 11 and min(combo) > 6): # exclude no foods when using dump2.json
             # Here we have lists of serving counts like this:
             # [0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0]
             # We need to reverse map the position of the serving
             # to know which food the count is referencing
             with open(RESULT_LOG, 'a') as f:
                 for food_name, servings in zip(FOOD_NAMES_ORDERED_BY_CALORIE, combo):
-                    f.write("{} servings of {} \n".format(str(servings), food_name))
+                    f.write("\n {} servings of {} \n".format(str(servings), food_name))
                 f.write("==================================================\n\n")
         else:
             # Only log millions of rows. Otherwise the file blows up the disk space
